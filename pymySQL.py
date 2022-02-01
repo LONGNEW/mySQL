@@ -5,25 +5,22 @@ host, port, user, passwd, db, charset = f.readline().split()
 port = int(port)
 f.close()
 
-# 특정 DB에 연결하는 과정
 db = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=db, charset=charset)
-
-# 입력하는 실해창을 가져오는 방식.
-# 커서를 통해 입력을 하게 됨.
 cursor = db.cursor()
-sql = """
-        create table product(
-            product_code varchar(20) not null,
-            title varchar(200) not null,
-            ori_price int,
-            discount_price int,
-            discount_percent int,
-            delivery varchar(2),
-            primary key(product_code)
-        );
-        """
-cursor.execute(sql)
 
-# 모든 쿼리를 실행하도록 하는 함수 (데이터를 변환하고, 복원이 불가한 상황으로 가게 됨)
+# f"" 을 통해 더 편하게 sql 구문을 만들기.
+for idx in range(10):
+    code = 215673140 + idx
+    sql = f"""insert into product 
+    values ({code}, "스위트 바니 여름신상", 23000, 6900, 70, "F");
+    """
+    cursor.execute(sql)
+
+# # fetchall()을 통해 출력된 모든 결과들을 가져옴.
+# ret = cursor.fetchall()
+#
+# for item in ret:
+#     print(*item)
+
 db.commit()
 db.close()
