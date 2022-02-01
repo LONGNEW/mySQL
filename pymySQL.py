@@ -1,4 +1,5 @@
 import pymysql
+import pandas as pd
 
 f = open("login.txt", "r")
 host, port, user, passwd, db, charset = f.readline().split()
@@ -8,21 +9,15 @@ f.close()
 db = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=db, charset=charset)
 cursor = db.cursor()
 
-sql = f"""
-    update product set 
-    title="원피스 가디건 코디전", 
-    ori_price=33000, 
-    discount_price=9900, 
-    discount_percent=70
-    where product_code="215673141"
+sql = \
+f"""
+    select * from students;
 """
-cursor.execute(sql)
 
-# # fetchall()을 통해 출력된 모든 결과들을 가져옴.
-# ret = cursor.fetchall()
-#
-# for item in ret:
-#     print(*item)
+# pandas를 통해 DB 커넥션을 사용해서 쿼리 던지기
+# csv 파일 생성 함수 (파일 이름, 구분자, 인덱스 유무, 인코딩)
+df = pd.read_sql(sql, db)
+df.to_csv('students.csv', sep=',', index=False, encoding='utf-8')
 
 db.commit()
 db.close()
