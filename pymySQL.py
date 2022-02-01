@@ -9,15 +9,13 @@ f.close()
 db = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=db, charset=charset)
 cursor = db.cursor()
 
+# 현재 TABLE "bytTbl"에서 userID가 "userTbl"의 아이디를 참조하는 foriegn key로 설정.
+# 그럴 경우 추가 되는 데이터의 userID가 "userTbl"에 존재하지 않는 경우 에러가 발생하게 됨.
 sql = \
 f"""
-    select * from students;
+    INSERT INTO buyTbl (userID, prodName, groupName, price, amount) VALUES('STJ', '운동화', '의류', 30, 2);
 """
-
-# pandas를 통해 DB 커넥션을 사용해서 쿼리 던지기
-# csv 파일 생성 함수 (파일 이름, 구분자, 인덱스 유무, 인코딩)
-df = pd.read_sql(sql, db)
-df.to_csv('students.csv', sep=',', index=False, encoding='utf-8')
+cursor.execute(sql)
 
 db.commit()
 db.close()
