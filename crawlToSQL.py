@@ -13,12 +13,11 @@ def connect_db():
 
 def excute_db(db, sql):
     cursor = db.cursor()
-
-    sql = \
-    f"""
-    """
-
     cursor.execute(sql)
+    ret = cursor.fetchone()
+    if ret == None:
+        ret = [0]
+    return ret[0]
 
 def close_db(db):
     db.commit()
@@ -66,12 +65,31 @@ def get_items(html, name, sub_name):
         else:
             provider = provider.get_text()
 
+        print(name, sub_name, rank, title.get_text(), ori_price, dis_price)
+        # 이미 저장된 상품인 경우에는 에러가 발생하게 됨.
+        # 특정 code로 저장된 상품이 있는지 찾아야 함.
+        # COUNT 구문을 사용
+
+        sql = f"""
+            select count(*) from items where item_code = "{item_code}";
+        """
+        temp = excute_db(db, sql)
+
+        # COUNT의 결과가 0이 나온 경우에만 상품을 추가함.
+        if temp == 0:
+            sql = f"""
+                        insert into items 
+                        (item_code, title, ori_price, dis_price, discount_percent, provider)
+                        values ('{item_code}', '{title.get_text()}', {ori_price}, {dis_price}, {dis_percent}, '{provider}');
+                    """
+            excute_db(db, sql)
+
         sql = f"""
             insert into ranking
-            (main_category, sub_category, item_ranking, item_code) 
+            (main_category, sub_category, item_ranking, item_code)
             values ('{name}', '{sub_name}', {rank}, '{item_code}');
         """
-        print(sql)
+        excute_db(db, sql)
 
 
 def sub(link, name):
@@ -88,6 +106,7 @@ def sub(link, name):
         get_items(soup, name, item.get_text())
 
 db = connect_db()
+
 res = requests.get("http://corners.gmarket.co.kr/Bestsellers")
 soup = BeautifulSoup(res.content, "html.parser")
 
@@ -95,3 +114,4 @@ categories = soup.select("#categoryTabG li a")
 for item in categories:
     sub("http://corners.gmarket.co.kr" + item["href"], item.get_text())
 
+close_db(db)
