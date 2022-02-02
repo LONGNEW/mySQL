@@ -25,34 +25,69 @@ def close_db(db):
     db.close()
 
 def get_provider():
-    ret =
+    ret = None
     return ret
 
 def get_items(html, name, sub_name):
     ret = []
     items = html.select("div.best-list")
 
-    # HTML에서 동일한 클래스를 가진 다른 2개가 존재함.
-    # 원하는 정보를 골라서 사용하는 방식.
-    # 중요! get_text()와 같은 함수는 결국 그 객체가 존재해야 함.
-    # 존재하지 않으면 당연히 에러가 발생하게 됨.
     for idx, item in enumerate(items[1].select("li")):
-        title = item.select_one("a.itemname").get_text()
-        ori_price = item.select_one("div.o-price").get_text()
+        temp = dict()
+        rank = idx + 1
+        title = item.select_one("a.itemname")
+        ori_price = item.select_one("div.o-price")
+        dis_price = item.select_one("div.s-price strong span")
+        dis_percent = item.select_one("div.s-price em")
 
-        # 여러 태그들을 확인한 후에 모든 태그에 맞는 코드 생성.
-        dis_price = item.select_one("div.s-price strong span").get_text()
-        dis_percent = item.select_one("div.s-price em").get_text()
+        if ori_price == None or ori_price.get_text() == "":
+            ori_price = dis_price
+
+        if dis_price == None:
+            ori_price, dis_price = 0, 0
+        else:
+            ori_price = ori_price.get_text().replace(",", "").replace("원", "")
+            dis_price = dis_price.get_text().replace(",", "").replace("원", "")
+
+        if dis_percent == None or dis_percent.get_text() == "":
+            dis_percent = 0
+        else:
+            dis_percent = dis_percent.get_text().replace("%", "")
+
+        product_link = item.select_one("div.thumb > a").attrs["href"]
+        item_code = product_link.split("=")[1].split("&")[0]
+
+        res = requests.get(product_link)
+        soup = BeautifulSoup(res.content, "html.parser")
+        provider = soup.select_one("div.item-topinfo_headline span.text__seller a")
+
+        if provider == None:
+            provider = ""
+        else:
+            provider = provider.get_text()
+
+        sql = f"""
+            insert into ranking
+            (main_category, sub_category, item_ranking, item_code) 
+            values ('{name}', '{sub_name}', {rank}, '{item_code}');
+        """
+        print(sql)
 
 
 def sub(link, name):
     res = requests.get(link)
     soup = BeautifulSoup(res.content, "html.parser")
 
-    categories = soup.select("div.navi.group a")
-    for item in categories:
-        print(item.get_text())
+    get_items(soup, name, "ALL")
 
+    categories = soup.select("div.navi.group li > a")
+    for item in categories:
+        res = requests.get("http://corners.gmarket.co.kr/" + item["href"])
+        soup = BeautifulSoup(res.content, "html.parser")
+
+        get_items(soup, name, item.get_text())
+
+db = connect_db()
 res = requests.get("http://corners.gmarket.co.kr/Bestsellers")
 soup = BeautifulSoup(res.content, "html.parser")
 
