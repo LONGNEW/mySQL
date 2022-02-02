@@ -1,40 +1,34 @@
 import pymysql
+import requests
+from bs4 import BeautifulSoup
 
-f = open("login.txt", "r")
-host, port, user, passwd, db, charset = f.readline().split()
-port = int(port)
-f.close()
+def connect_db():
+    f = open("login.txt", "r")
+    host, port, user, passwd, db, charset = f.readline().split()
+    port = int(port)
+    f.close()
+    db = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=db, charset=charset)
 
-db = pymysql.connect(host=host, port=port, user=user, passwd=passwd, db=db, charset=charset)
-cursor = db.cursor()
+    return db
 
-sql = \
-f"""
-create table items(
-    item_code varchar(20) not null primary key,
-    title varchar(20) not null,
-    ori_price int not null,
-    dis_price int not null,
-    discount_percent int not null,
-    provider varchar(100)
-);
-"""
+def excute_db(db, sql):
+    cursor = db.cursor()
 
-cursor.execute(sql)
+    sql = \
+    f"""
+    """
 
-sql = \
-f"""
-create table ranking(
-    num int auto_increment not null primary key,
-    main_category varchar(50) not null,
-    sub_category varchar(50) not null,
-    item_ranking tinyint unsigned not null,
-    item_code varchar(20) not null,
-    foreign key (item_code) references items(item_code)
-);
-"""
+    cursor.execute(sql)
 
-cursor.execute(sql)
+def close_db(db):
+    db.commit()
+    db.close()
 
-db.commit()
-db.close()
+
+res = requests.get("http://corners.gmarket.co.kr/Bestsellers")
+soup = BeautifulSoup(res.content, "html.parser")
+
+categories = soup.select("#categoryTabG li a")
+# bs4에서 링크를 가져오는 법, 내부 텍스트를 가져오는 방법.
+for item in categories:
+    print(item["href"], item.get_text())
